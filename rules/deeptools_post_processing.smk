@@ -26,37 +26,37 @@ rule bamCoverage:
         --ignoreForNormalization {params.ignoreForNormalization} \
         &>{log}"
 
-rule bamcompare:
-    input:
-        treatment   = RESULT_DIR + "mapped/{treatment}.sorted.rmdup.bam",              #input requires an indexed bam file
-        control     = RESULT_DIR + "mapped/{control}.sorted.rmdup.bam"                   #input requires an indexed bam file
-    output:
-        bigwig = RESULT_DIR + "bamcompare/log2_{treatment}_{control}.bamcompare.bw"
-    message:
-        "Running bamCompare for {wildcards.treatment} and {wildcards.control}"
-    log:
-        RESULT_DIR + "logs/deeptools/log2_{treatment}_{control}.bamcompare.bw.log"
-    conda:
-        "../envs/deeptools.yaml"
-    params:
-        binSize             = str(config['bamcompare']['binSize']),
-        normalizeUsing      = str(config['bamcompare']['normalizeUsing']),
-        EFFECTIVEGENOMESIZE = str(config["bamcompare"]["EFFECTIVEGENOMESIZE"]),
-        operation           = str(config['bamcompare']['operation']),
-        smoothLength        = str(config['bamcompare']['smoothLength']),
-        ignoreForNormalization = str(config['bamcompare']['ignoreForNormalization']),
-        scaleFactorsMethod  = str(config['bamcompare']['scaleFactorsMethod'])
-    shell:
-        "bamCompare -b1 {input.treatment} \
-        -b2 {input.control}  \
-        --binSize {params.binSize} \
-        -o {output.bigwig} \
-        --normalizeUsing {params.normalizeUsing} \
-        --operation {params.operation} \
-        --smoothLength {params.smoothLength} \
-        --ignoreForNormalization {params.ignoreForNormalization} \
-        --scaleFactorsMethod {params.scaleFactorsMethod} \
-        &>{log}"
+# rule bamcompare:
+#     input:
+#         treatment   = RESULT_DIR + "mapped/{treatment}.sorted.rmdup.bam",              #input requires an indexed bam file
+#         control     = RESULT_DIR + "mapped/{control}.sorted.rmdup.bam"                   #input requires an indexed bam file
+#     output:
+#         bigwig = RESULT_DIR + "bamcompare/log2_{treatment}_{control}.bamcompare.bw"
+#     message:
+#         "Running bamCompare for {wildcards.treatment} and {wildcards.control}"
+#     log:
+#         RESULT_DIR + "logs/deeptools/log2_{treatment}_{control}.bamcompare.bw.log"
+#     conda:
+#         "../envs/deeptools.yaml"
+#     params:
+#         binSize             = str(config['bamcompare']['binSize']),
+#         normalizeUsing      = str(config['bamcompare']['normalizeUsing']),
+#         EFFECTIVEGENOMESIZE = str(config["bamcompare"]["EFFECTIVEGENOMESIZE"]),
+#         operation           = str(config['bamcompare']['operation']),
+#         smoothLength        = str(config['bamcompare']['smoothLength']),
+#         ignoreForNormalization = str(config['bamcompare']['ignoreForNormalization']),
+#         scaleFactorsMethod  = str(config['bamcompare']['scaleFactorsMethod'])
+#     shell:
+#         "bamCompare -b1 {input.treatment} \
+#         -b2 {input.control}  \
+#         --binSize {params.binSize} \
+#         -o {output.bigwig} \
+#         --normalizeUsing {params.normalizeUsing} \
+#         --operation {params.operation} \
+#         --smoothLength {params.smoothLength} \
+#         --ignoreForNormalization {params.ignoreForNormalization} \
+#         --scaleFactorsMethod {params.scaleFactorsMethod} \
+#         &>{log}"
 
 rule multiBamSummary:
     input:
@@ -113,10 +113,10 @@ rule plotCorrelation:
 
 rule computeMatrix:
     input:
-        bigwig = RESULT_DIR + "bamcompare/log2_{treatment}_{control}.bamcompare.bw",
+        bigwig = RESULT_DIR + "bigwig/{sample}.bw",
         bed    = WORKING_DIR + "gene_model.gtf"
     output:
-        RESULT_DIR + "computematrix/{treatment}_{control}.TSS.gz"
+        RESULT_DIR + "computematrix/{sample}.TSS.gz"
     threads: 10
     params:
         binSize = str(config['computeMatrix']['binSize']),
@@ -125,7 +125,7 @@ rule computeMatrix:
     conda:
         "../envs/deeptools.yaml"
     log:
-        RESULT_DIR + "logs/deeptools/computematrix/{treatment}_{control}.log"
+        RESULT_DIR + "logs/deeptools/computematrix/{sample}.log"
     message:
         "Computing matrix for {input.bigwig} with {params.binSize} bp windows and {params.upstream} bp around TSS"
     shell:
@@ -141,20 +141,47 @@ rule computeMatrix:
         -o {output} \
         2> {log}"
 
+rule computeMatrix_scale:
+    input:
+        bigwig = RESULT_DIR + "bigwig/{sample}.bw",
+        bed    = WORKING_DIR + "gene_model.gtf"
+    output:
+        RESULT_DIR + "computematrix/{sample}.scale-regions.gz"
+    threads: 10
+    params:
+        binSize     = str(config['computeMatrix']['binSize']),
+        upstream    = str(config['computeMatrix']['upstream']),
+        downstream = str(config['computeMatrix']['downstream'])
+    conda:
+        "../envs/deeptools.yaml"
+    log:
+        RESULT_DIR + "logs/deeptools/computematrix/{sample}.log"
+    shell:
+        "computeMatrix \
+        scale-regions \
+        -S {input.bigwig} \
+        -R {input.bed} \
+        --afterRegionStartLength {params.upstream} \
+        --beforeRegionStartLength {params.downstream} \
+        --numberOfProcessors {threads} \
+        --binSize {params.binSize} \
+        -o {output} \
+        2> {log}"
+
 rule plotHeatmap:
     input:
-        RESULT_DIR + "computematrix/{treatment}_{control}.TSS.gz"
+        RESULT_DIR + "computematrix/{sample}.{type}.gz"
     output:
-        RESULT_DIR + "heatmap/{treatment}_{control}.pdf"
+        RESULT_DIR + "heatmap/{sample}.{type}.pdf"
     params:
         kmeans = str(config['plotHeatmap']['kmeans']),
         color  = str(config['plotHeatmap']['color']),
         plot   = str(config['plotHeatmap']['plot']),
-        cluster = "{treatment}_vs_{control}.bed"
+        cluster = RESULT_DIR + "heatmap/{sample}.bed"
     conda:
         "../envs/deeptools.yaml"
     log:
-        RESULT_DIR + "logs/deeptools/plotHeatmap/{treatment}_{control}.log"
+        RESULT_DIR + "logs/deeptools/plotHeatmap/{sample}.{type}.log"
     message:
         "Preparing Heatmaps..."
     shell:
@@ -168,32 +195,29 @@ rule plotHeatmap:
 
 rule plotFingerprint:
     input:
-        treatment = expand(RESULT_DIR + "mapped/{treatment}.sorted.rmdup.bam", treatment = CASES),
-        control   = expand(RESULT_DIR + "mapped/{control}.sorted.rmdup.bam", control = CONTROLS)
+        expand(RESULT_DIR + "mapped/{sample}.sorted.rmdup.bam", sample = SAMPLES)
     output:
-        pdf = RESULT_DIR + "plotFingerprint/{treatment}_vs_{control}.pdf"
+        pdf = RESULT_DIR + "plotFingerprint/Fingerplot.pdf"
     params:
         EXTENDREADS  = str(config["bamCoverage"]["params"]["EXTENDREADS"]),
         binSize      = str(config['bamCoverage']["params"]['binSize'])
     conda:
         "../envs/deeptools.yaml"
-    log:
-        RESULT_DIR + "logs/deeptools/plotFingerprint/{treatment}_vs_{control}.log"
     message:
         "Preparing deeptools plotFingerprint"
     shell:
         "plotFingerprint \
-        -b {input.treatment} {input.control} \
+        -b {input} \
         --extendReads {params.EXTENDREADS} \
         --binSize {params.binSize} \
         --plotFile {output}"
 
 rule plotProfile:
     input:
-        RESULT_DIR + "computematrix/{treatment}_{control}.TSS.gz"
+        RESULT_DIR + "computematrix/{sample}.{type}.gz"
     output:
-        pdf = RESULT_DIR + "plotProfile/{treatment}_{control}.pdf",
-        bed = RESULT_DIR + "plotProfile/{treatment}_{control}.bed"
+        pdf = RESULT_DIR + "plotProfile/{sample}.{type}.pdf",
+        bed = RESULT_DIR + "plotProfile/{sample}.{type}.bed"
     params:
         kmeans      = str(config['plotProfile']['kmeans']),
         startLabel  = str(config['plotProfile']['startLabel']),
@@ -201,7 +225,7 @@ rule plotProfile:
     conda:
         "../envs/deeptools.yaml"
     log:
-        RESULT_DIR + "logs/deeptools/plotProfile/{treatment}_{control}.log"
+        RESULT_DIR + "logs/deeptools/plotProfile/{sample}.{type}.log"
     message:
         "Preparing deeptools plotProfile"
     shell:

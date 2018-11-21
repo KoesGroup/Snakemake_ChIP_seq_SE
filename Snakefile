@@ -1,4 +1,4 @@
-# Snakemake file for ChIP-Seq PE analysis
+# Snakemake file for ChIP-Seq SE analysis
 
 ###############
 # Libraries
@@ -65,22 +65,20 @@ wildcard_constraints:
 # Desired output
 ##############
 
-FASTQC_REPORTS  =     expand(RESULT_DIR + "fastqc/{sample}.fastqc.html", sample=SAMPLES)
+FASTQC_REPORTS  =     expand(RESULT_DIR + "fastqc/{sample}.fastqc.zip", sample=SAMPLES)
 BAM_INDEX       =     expand(RESULT_DIR + "mapped/{sample}.sorted.rmdup.bam.bai", sample=SAMPLES)
-BAM_RMDUP       =     expand(RESULT_DIR + "mapped/{sample}.sorted.rmdup.bam", sample=SAMPLES)
-BEDGRAPH        =     expand(RESULT_DIR + "bedgraph/{sample}.sorted.rmdup.bedgraph", sample=SAMPLES)
 BIGWIG          =     expand(RESULT_DIR + "bigwig/{sample}.bw", sample=SAMPLES)
-BAM_COMPARE     =     expand(RESULT_DIR + "bamcompare/log2_{treatment}_{control}.bamcompare.bw", zip, treatment = CASES, control = CONTROLS) #add zip function in the expand to compare respective treatment and control
-BED_NARROW      =     expand(RESULT_DIR + "bed/{treatment}_vs_{control}_peaks.narrowPeak", zip, treatment = CASES, control = CONTROLS)
-BED_BROAD       =     expand(RESULT_DIR + "bed/{treatment}_vs_{control}_peaks.broadPeak", zip, treatment = CASES, control = CONTROLS)
+BED_NARROW      =     expand(RESULT_DIR + "bed/{sample}_peaks.narrowPeak", sample=SAMPLES)
 MULTIBAMSUMMARY =     RESULT_DIR + "multiBamSummary/MATRIX.npz"
 PLOTCORRELATION =     RESULT_DIR + "plotCorrelation/MATRIX.png"
-COMPUTEMATRIX   =     expand(RESULT_DIR + "computematrix/{treatment}_{control}.TSS.gz", treatment = CASES, control = CONTROLS)
-HEATMAP         =     expand(RESULT_DIR + "heatmap/{treatment}_{control}.pdf", treatment = CASES, control = CONTROLS)
-PLOTFINGERPRINT =     expand(RESULT_DIR + "plotFingerprint/{treatment}_vs_{control}.pdf", zip, treatment = CASES, control = CONTROLS)
-PLOTPROFILE_PDF =     expand(RESULT_DIR + "plotProfile/{treatment}_{control}.pdf", treatment = CASES, control = CONTROLS)
-PLOTPROFILE_BED =     expand(RESULT_DIR + "plotProfile/{treatment}_{control}.bed", treatment = CASES, control = CONTROLS)
+COMPUTEMATRIX   =     expand(RESULT_DIR + "computematrix/{sample}.{type}.gz", sample=SAMPLES, type={"TSS", "scale-regions"})
+HEATMAP         =     expand(RESULT_DIR + "heatmap/{sample}.{type}.pdf", sample=SAMPLES, type={"TSS", "scale-regions"})
+PLOTFINGERPRINT =     RESULT_DIR + "plotFingerprint/Fingerplot.pdf"
+PLOTPROFILE_PDF =     expand(RESULT_DIR + "plotProfile/{sample}.{type}.pdf", sample=SAMPLES, type={"TSS", "scale-regions"})
+PLOTPROFILE_BED =     expand(RESULT_DIR + "plotProfile/{sample}.{type}.bed", sample=SAMPLES, type={"TSS", "scale-regions"})
 MULTIQC         =     "qc/multiqc.html"
+FRAGMENTSIZE    =     RESULT_DIR + "bamPEFragmentSize/fragmentSize.png"
+PLOTCOVERAGE    =     RESULT_DIR + "plotCoverage/Coverage.png"
 
 ###############
 # Final output
@@ -88,11 +86,9 @@ MULTIQC         =     "qc/multiqc.html"
 rule all:
     input:
         BAM_INDEX,
-        BAM_RMDUP,
         FASTQC_REPORTS,
         #BEDGRAPH,
         BIGWIG,
-        BAM_COMPARE,
         BED_NARROW,
         #BED_BROAD,
         MULTIBAMSUMMARY,
@@ -103,7 +99,7 @@ rule all:
         PLOTPROFILE_PDF,
         PLOTPROFILE_BED,
         MULTIQC
-    message: "ChIP-seq pipeline succesfully run."		#finger crossed to see this message!
+    message: "ChIP-seq SE pipeline succesfully run."		#finger crossed to see this message!
 
     shell:"#rm -rf {WORKING_DIR}"
 
