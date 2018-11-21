@@ -67,7 +67,8 @@ rule multiBamSummary:
         "Computing the read coverage into a numpy array "
     threads: 10
     params:
-        binSize     = str(config['multiBamSummary']['binSize'])
+        binSize     = str(config['multiBamSummary']['binSize']),
+        extendReads = str(config['multiBamSummary']['extendReads'])
     log:
         RESULT_DIR + "logs/deeptools/multibamsummary/MATRIX.log"
     shell:
@@ -76,7 +77,7 @@ rule multiBamSummary:
         --numberOfProcessors {threads}\
         --binSize {params.binSize} \
         --centerReads \
-        --extendReads \
+        --extendReads {params.extendReads} \
         -o {output} \
         2> {log}"
 
@@ -126,7 +127,7 @@ rule computeMatrix:
     log:
         RESULT_DIR + "logs/deeptools/computematrix/{treatment}_{control}.log"
     message:
-        "Computing matrix for {input.bigwig} with {params.binSize} bp windows and {params.upstream} bp around TSS"        
+        "Computing matrix for {input.bigwig} with {params.binSize} bp windows and {params.upstream} bp around TSS"
     shell:
         "computeMatrix \
         reference-point \
@@ -155,7 +156,7 @@ rule plotHeatmap:
     log:
         RESULT_DIR + "logs/deeptools/plotHeatmap/{treatment}_{control}.log"
     message:
-        "Preparing Heatmaps..."        
+        "Preparing Heatmaps..."
     shell:
         "plotHeatmap \
         --matrixFile {input} \
@@ -179,7 +180,7 @@ rule plotFingerprint:
     log:
         RESULT_DIR + "logs/deeptools/plotFingerprint/{treatment}_vs_{control}.log"
     message:
-        "Preparing deeptools plotFingerprint"        
+        "Preparing deeptools plotFingerprint"
     shell:
         "plotFingerprint \
         -b {input.treatment} {input.control} \
@@ -202,7 +203,7 @@ rule plotProfile:
     log:
         RESULT_DIR + "logs/deeptools/plotProfile/{treatment}_{control}.log"
     message:
-        "Preparing deeptools plotProfile"        
+        "Preparing deeptools plotProfile"
     shell:
         "plotProfile \
         --matrixFile {input} \

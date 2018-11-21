@@ -77,13 +77,14 @@ bamcompare:
           # broad peak calling : macs2 callpeak -t ChIP.bam -c Control.bam --broad -g hs --broad-cutoff 0.1
 macs2:
   genomesize: "--gsize mm"        #here I used 'mm' because it's the closest to tomato, for human change to 'hs'
-  format: "--format BAMPE"        #Use BAMPE to activate the paired end data, MACS will use the actual insert size of pairs of reads to build the fragemnt pileup.
+  format: "--format BAM"        #Use BAMPE to activate the paired end data, MACS will use the actual insert size of pairs of reads to build the fragemnt pileup.
   qvalue: "0.05"                  #default is 0.05
   outdir : "results/bed/"
   bandwidth: "--bw 350"           #the bandwidth is used to scan the genome for model building. To be set to the expected sonication fragment size.
 
 multiBamSummary:
   binSize: "1000"
+  extendReads: "500"            #this parameter is necessary when dealing with SE data
 
 computeMatrix:
   binSize   : "1000"

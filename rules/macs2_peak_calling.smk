@@ -17,7 +17,7 @@ rule call_narrow_peaks:
         "../envs/macs2_env.yaml"
     shell:
         """
-        macs2 callpeak -t {input.treatment} -c {input.control} {params.format} {params.genomesize} --name {params.name} --nomodel --bdg -q {params.qvalue} --outdir results/bed/ &>{log}
+        macs2 callpeak -t {input.treatment} -c {input.control} {params.format} {params.genomesize} --name {params.name} --bdg -q {params.qvalue} --nomodel --extsize 147 --outdir results/bed/ &>{log}
         """
 
 rule call_broad_peaks:
@@ -39,5 +39,5 @@ rule call_broad_peaks:
         "../envs/macs2_env.yaml"
     shell:
         """
-        macs2 callpeak -t {input.treatment} -c {input.control} {params.format} --broad --broad-cutoff 0.1 {params.genomesize} --name {params.name} --nomodel --bdg -q {params.qvalue} --outdir results/bed/ &>{log}
+        macs2 callpeak -t {input.treatment} -c {input.control} {params.format} --broad --broad-cutoff 0.1 {params.genomesize} --name {params.name} --bdg -q {params.qvalue} --nomodel --extsize 147 --outdir results/bed/ &>{log}
         """

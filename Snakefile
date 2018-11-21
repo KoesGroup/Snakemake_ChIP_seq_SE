@@ -29,61 +29,12 @@ TOTALCORES          = 16                             #check this via 'grep -c pr
 def get_fastq(wildcards):
     return units.loc[(wildcards.sample), ["fq1", "fq2"]].dropna()
 
-# def get_reads(wildcards):
-#     units = pd.read_csv("units.tsv",sep="\t",index_col="sample")
-#     if pd.isnull(units.loc[(wildcards.sample),["fq2"]]):
-#         # single end
-#         fastqs = units.loc[(wildcards.sample),["fq1"]].tolist()
-#     else:
-#         # paired end
-#         fastqs = units.loc[(wildcards.sample),["fq1","fq2"]].tolist()
-#     return fastqs
-
 def get_samples_per_treatment(input_df="units.tsv",colsamples="sample",coltreatment="condition",treatment="control"):
-    """This function returns a list of samples that correspond to the same experimental condition"""
-    df = pd.read_table(input_df)
-    df = df.loc[df[coltreatment] == treatment]
-    filtered_samples = df[colsamples].tolist()
-    return filtered_samples
-
-def is_single_end(sample):
-    """This function detect missing value in the column 2 of the units.tsv, it is used by the function get_trimmed_reads to define the samples used by the align rule"""
-    return pd.isnull(units.loc[(sample), "fq2"])
-
-# def get_trimmed_reads(wildcards):
-#     """Get trimmed reads of a given sample """
-#     if not is_single_end(**wildcards):
-#         # paired-end sample
-#         return expand(WORKING_DIR + "trimmed/{sample}.{group}.fastq.gz",
-#                       group=[1, 2], **wildcards)
-#     # single end sample
-#     return WORKING_DIR + "trimmed/{sample}.fastq.gz".format(**wildcards)
-
-# def get_trimmed_reads(wildcards):
-#     units = pd.read_table("units.tsv", sep="\t", index_col= "sample")
-#     fastq_list = units.loc[(wildcards.sample), ["fq1","fq2"]].dropna().tolist()
-#     if len(fastq_list) == 2:
-#         print("running PE pipeline")
-#         return expand(WORKING_DIR + "trimmed/{sample}.{group}.fastq.gz", group=[1,2], **wildcards) #return a list of path to the  trimmed files
-#     elif len(fastq_list) == 1:
-#         print("running SE pipeline")
-#         return WORKING_DIR + "trimmed/{sample}.fastq.gz".format(**wildcards) #return the path to the single file trimmed
-#     else:
-#         print("The units.tsv is incorrect")
-
-
-def get_trimmed_reads(wildcards):
-    units = pd.read_csv("units.tsv",sep="\t",index_col="sample")
-    fastqs = units.loc[(wildcards.sample),["fq1","fq2"]].dropna().tolist()
-    if len(fastqs) == 1:
-        # single end
-        return WORKING_DIR + "trimmed/{sample}.fastq.gz".format(**wildcards) # returns the name for one trimmed fastq file
-    elif len(fastqs) == 2:
-        # paired-end
-        return expand(WORKING_DIR + "trimmed/{sample}.{group}.fastq.gz",group=[1,2], **wildcards)
-    else:
-        # problem
-        print("make sure your dataframe complies with the format: sample / fq1 / fq2 / condition")
+     """This function returns a list of samples that correspond to the same experimental condition"""
+     df = pd.read_table(input_df)
+     df = df.loc[df[coltreatment] == treatment]
+     filtered_samples = df[colsamples].tolist()
+     return filtered_samples
 
 ##############
 # Samples and conditions
@@ -129,7 +80,7 @@ HEATMAP         =     expand(RESULT_DIR + "heatmap/{treatment}_{control}.pdf", t
 PLOTFINGERPRINT =     expand(RESULT_DIR + "plotFingerprint/{treatment}_vs_{control}.pdf", zip, treatment = CASES, control = CONTROLS)
 PLOTPROFILE_PDF =     expand(RESULT_DIR + "plotProfile/{treatment}_{control}.pdf", treatment = CASES, control = CONTROLS)
 PLOTPROFILE_BED =     expand(RESULT_DIR + "plotProfile/{treatment}_{control}.bed", treatment = CASES, control = CONTROLS)
-MULTIQC         =     RESULT_DIR + "multiqc_report.html"
+MULTIQC         =     "qc/multiqc.html"
 
 ###############
 # Final output
@@ -138,20 +89,20 @@ rule all:
     input:
         BAM_INDEX,
         BAM_RMDUP,
-        #FASTQC_REPORTS,
+        FASTQC_REPORTS,
         #BEDGRAPH,
         BIGWIG,
-        #BAM_COMPARE,
-        #BED_NARROW,
-        #BED_BROAD
-        #MULTIBAMSUMMARY,
-        #PLOTCORRELATION,
-        #COMPUTEMATRIX,
-        #HEATMAP,
-        #PLOTFINGERPRINT,
-        #PLOTPROFILE_PDF,
-        #PLOTPROFILE_BED,
-        #MULTIQC
+        BAM_COMPARE,
+        BED_NARROW,
+        #BED_BROAD,
+        MULTIBAMSUMMARY,
+        PLOTCORRELATION,
+        COMPUTEMATRIX,
+        HEATMAP,
+        PLOTFINGERPRINT,
+        PLOTPROFILE_PDF,
+        PLOTPROFILE_BED,
+        MULTIQC
     message: "ChIP-seq pipeline succesfully run."		#finger crossed to see this message!
 
     shell:"#rm -rf {WORKING_DIR}"
@@ -168,8 +119,8 @@ include : "rules/deeptools_post_processing.smk"
 
 rule multiqc:
     input:
-        expand(RESULT_DIR + "fastqc/{sample}_{pair}_fastqc.zip", sample=SAMPLES, pair={"forward", "reverse"}),
-        expand(RESULT_DIR + "bed/{sample}_peaks.xls", sample= SAMPLES)
+        expand(RESULT_DIR + "fastqc/{sample}.fastqc.zip", sample= SAMPLES),
+        expand(RESULT_DIR + "bed/{treatment}_vs_{control}_peaks.xls", zip, treatment = CASES, control = CONTROLS)
     output:
         "qc/multiqc.html"
     params:
