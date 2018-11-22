@@ -115,7 +115,7 @@ rule rmdup:
         "../envs/samtools.yaml"
     shell:
         """
-        samtools rmdup {input} {output.bam} &>{log}
+        samtools rmdup -s {input} {output.bam} &>{log}
         samtools index {output.bam}
         """
         #samtools manual says "This command is obsolete. Use markdup instead
