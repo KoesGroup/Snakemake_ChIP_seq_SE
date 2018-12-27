@@ -98,7 +98,7 @@ rule all:
         PLOTFINGERPRINT,
         PLOTPROFILE_PDF,
         PLOTPROFILE_BED,
-        MULTIQC
+        #MULTIQC
     message: "ChIP-seq SE pipeline succesfully run."		#finger crossed to see this message!
 
     shell:"#rm -rf {WORKING_DIR}"
